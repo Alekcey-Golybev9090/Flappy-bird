@@ -8,8 +8,8 @@ class Bird(pygame.sprite.Sprite):
         super().__init__()
         self.image = pygame.transform.scale(load_image('bird1.png', -1), (120, 70))
         self.rect = self.image.get_rect()
-        self.rect.x = 200
-        self.rect.y = 300
+        self.rect.x = 150
+        self.rect.y = 200
 
 
 class Button(pygame.sprite.Sprite):
@@ -42,20 +42,29 @@ def load_image(name, colorkey=None):
     return image
 
 
+def init_start_menu():
+    play = False
+    all_sprites.empty()
+    play_button = Button('play_button.png', (350, 350), 231, 131)
+    results_button = Button('results_button.png', (500, 550), 200, 100)
+    all_sprites.add(play_button)
+    all_sprites.add(results_button)
+
+
 pygame.init()
 pygame.display.set_caption('flappy bird')
 width, height = 960, 720
 size = width, height
 screen = pygame.display.set_mode(size)
 running = True
+all_sprites = pygame.sprite.Group()
+init_start_menu()
 V = 20
 fps = 60
 clock = pygame.time.Clock()
-all_sprites = pygame.sprite.Group()
 bird = Bird()
 all_sprites.add(bird)
 bg = load_image('bg.png')
-
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
