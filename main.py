@@ -12,6 +12,19 @@ class Bird(pygame.sprite.Sprite):
         self.rect.y = 300
 
 
+class Button(pygame.sprite.Sprite):
+    def __init__(self, image, pos, width, height):
+        super().__init__()
+        self.image = pygame.transform.scale(load_image(image, -1), (width, height))
+        self.rect = self.image.get_rect()
+        self.rect.x = pos[0]
+        self.rect.y = pos[1]
+        self.width, self.height = width, height
+
+    def is_checked(self, x, y):
+        return (self.rect.x <= x <= self.rect.x + self.width) and (self.rect.y <= y <= self.rect.y + height)
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
