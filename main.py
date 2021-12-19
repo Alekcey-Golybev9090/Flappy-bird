@@ -6,7 +6,7 @@ import sys
 class Bird(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('bird1.png'), (85, 60))
+        self.image = pygame.transform.scale(load_image('bird1.png', -1), (120, 70))
         self.rect = self.image.get_rect()
         self.rect.x = 200
         self.rect.y = 300
