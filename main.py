@@ -25,6 +25,19 @@ class Button(pygame.sprite.Sprite):
         return (self.rect.x <= x <= self.rect.x + self.width) and (self.rect.y <= y <= self.rect.y + height)
 
 
+class Background(pygame.sprite.Sprite):
+    def __init__(self, image):
+        super().__init__()
+        self.image = load_image(image)
+        self.width = self.image.get_rect().width
+        self.x1 = 0
+        self.x2 = self.width
+
+    def scrolling(self, V):
+        self.x1 = 0 if self.x1 - V < -self.width else self.x1 - V
+        self.x2 = self.width if self.x2 - V < 0 else self.x2 - V
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
@@ -59,17 +72,19 @@ screen = pygame.display.set_mode(size)
 running = True
 all_sprites = pygame.sprite.Group()
 init_start_menu()
-V = 20
+V = 5
 fps = 60
 clock = pygame.time.Clock()
 bird = Bird()
 all_sprites.add(bird)
-bg = load_image('bg.png')
+bg = Background('bg.png')
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    screen.blit(bg, (0, 0))
+    bg.scrolling(V)
+    screen.blit(bg.image, (bg.x1, 0))
+    screen.blit(bg.image, (bg.x2, 0))
     all_sprites.draw(screen)
     pygame.display.flip()
     clock.tick(fps)
