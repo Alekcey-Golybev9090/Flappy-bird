@@ -46,7 +46,7 @@ class Button(pygame.sprite.Sprite):
         self.width, self.height = width, height
 
     def is_checked(self, x, y):
-        return (self.rect.x <= x <= self.rect.x + self.width) and (self.rect.y <= y <= self.rect.y + height)
+        return self.rect.x <= x <= self.rect.x + self.width and self.rect.y <= y <= self.rect.y + self.height
 
 
 class Background(pygame.sprite.Sprite):
@@ -106,10 +106,16 @@ def load_image(name, colorkey=None):
 
 
 def init_start_menu():
-    global play_button, levels_button, results_button
+    global play_button, levels_button, results_button, bird
+
     play = False
     buttons.empty()
+    widgets.empty()
     all_sprites.empty()
+
+    bird = Bird(load_image('bird.png'), 3, 1, 253, 177)
+    all_sprites.add(bird)
+
     play_button = Button('play_button.png', (350, 350), 231, 131)
     results_button = Button('results_button.png', (540, 550), 200, 100)
     levels_button = Button('button_level.png', (200, 550), 200, 100)
@@ -119,7 +125,7 @@ def init_start_menu():
 
 
 def init_levels_menu():
-    global btn_left, btn_right, leveldisplay
+    global btn_left, btn_right, leveldisplay, exit_button
     buttons.empty()
     all_sprites.empty()
     leveldisplay = LevelDisplay(
@@ -129,6 +135,9 @@ def init_levels_menu():
     btn_right = Button('btn_right.png', (710, 320), 49, 88)
     buttons.add(btn_left)
     buttons.add(btn_right)
+
+    exit_button = Button('btn_exit.png', (730, 205), 45, 45)
+    buttons.add(exit_button)
 
 
 pygame.init()
@@ -145,6 +154,7 @@ results_button = None
 levels_button = None
 btn_left = None
 btn_right = None
+exit_button = None
 
 widgets = pygame.sprite.Group()
 leveldisplay = None
@@ -153,8 +163,6 @@ init_start_menu()
 V = 5
 fps = 60
 clock = pygame.time.Clock()
-bird = Bird(load_image('bird.png'), 3, 1, 253, 177)
-all_sprites.add(bird)
 bg = Background('bg.png')
 
 level = 0
@@ -165,7 +173,7 @@ while running:
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
             if play_button.is_checked(*event.pos):
                 play = True
-            if levels_button.is_checked(*event.pos):
+            if levels_button is not None and levels_button.is_checked(*event.pos):
                 init_levels_menu()
             if btn_left is not None and btn_left.is_checked(*event.pos):
                 leveldisplay.previous()
@@ -173,6 +181,8 @@ while running:
             if btn_right is not None and btn_right.is_checked(*event.pos):
                 leveldisplay.next()
                 level = leveldisplay.get_level()
+            if exit_button is not None and exit_button.is_checked(*event.pos):
+                init_start_menu()
     bg.scrolling(V)
     bird.update()
     screen.blit(bg.image, (bg.x1, 0))
