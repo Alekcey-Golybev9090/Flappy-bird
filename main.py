@@ -70,8 +70,8 @@ class LevelDisplay(pygame.sprite.Sprite):
         self.level = 0
         self.update_image()
         self.rect = self.image.get_rect()
-        self.rect.x = 500
-        self.rect.y = 300
+        self.rect.x = 180
+        self.rect.y = 200
 
     def update_image(self):
         self.image = self.levels_image[self.level]
@@ -117,8 +117,11 @@ def init_start_menu():
 
 def init_levels_menu():
     buttons.empty()
+    all_sprites.empty()
     widgets.add(
         LevelDisplay((load_image('level_menu1.png'), load_image('level_menu2.png'), load_image('level_menu3.png'))))
+    buttons.add(Button('btn_left.png', (200, 320), 49, 88))
+    buttons.add(Button('btn_right.png', (710, 320), 49, 88))
 
 
 pygame.init()
@@ -151,6 +154,7 @@ while running:
     screen.blit(bg.image, (bg.x1, 0))
     screen.blit(bg.image, (bg.x2, 0))
     all_sprites.draw(screen)
+    widgets.draw(screen)
     buttons.draw(screen)
     pygame.display.flip()
     clock.tick(fps)
