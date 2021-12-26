@@ -3,13 +3,6 @@ import os
 import sys
 
 
-# class Bird(pygame.sprite.Sprite):
-#    def __init__(self):
-#        super().__init__()
-#        self.image = pygame.transform.scale(load_image('bird1.png', -1), (120, 70))
-#        self.rect = self.image.get_rect()
-#        self.rect.x = 150
-#        self.rect.y = 200
 class Bird(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, x, y):
         super().__init__(all_sprites)
@@ -33,7 +26,7 @@ class Bird(pygame.sprite.Sprite):
         if not self.iteration:
             self.cur_frame = (self.cur_frame + 1) % len(self.frames)
             self.image = self.frames[self.cur_frame]
-        self.iteration = (self.iteration + 1) % 10
+        self.iteration = (self.iteration + 1) % 9
 
 
 class Button(pygame.sprite.Sprite):
@@ -113,7 +106,7 @@ def init_start_menu():
     widgets.empty()
     all_sprites.empty()
 
-    bird = Bird(load_image('bird.png'), 3, 1, 253, 177)
+    bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
     all_sprites.add(bird)
 
     play_button = Button('play_button.png', (350, 350), 231, 131)
