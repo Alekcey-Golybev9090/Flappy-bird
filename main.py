@@ -84,6 +84,9 @@ class LevelDisplay(pygame.sprite.Sprite):
         self.level = (self.level - 1) if self.level - 1 > -1 else self.k_levels - 1
         self.update_image()
 
+    def get_level(self):
+        return self.level + 1
+
 
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
@@ -116,12 +119,16 @@ def init_start_menu():
 
 
 def init_levels_menu():
+    global btn_left, btn_right, leveldisplay
     buttons.empty()
     all_sprites.empty()
-    widgets.add(
-        LevelDisplay((load_image('level_menu1.png'), load_image('level_menu2.png'), load_image('level_menu3.png'))))
-    buttons.add(Button('btn_left.png', (200, 320), 49, 88))
-    buttons.add(Button('btn_right.png', (710, 320), 49, 88))
+    leveldisplay = LevelDisplay(
+        (load_image('level_menu1.png'), load_image('level_menu2.png'), load_image('level_menu3.png')))
+    widgets.add(leveldisplay)
+    btn_left = Button('btn_left.png', (200, 320), 49, 88)
+    btn_right = Button('btn_right.png', (710, 320), 49, 88)
+    buttons.add(btn_left)
+    buttons.add(btn_right)
 
 
 pygame.init()
@@ -132,7 +139,16 @@ screen = pygame.display.set_mode(size)
 running = True
 all_sprites = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
+# создеём переменные, которые будут ссылаться на кнопки
+play_button = None
+results_button = None
+levels_button = None
+btn_left = None
+btn_right = None
+
 widgets = pygame.sprite.Group()
+leveldisplay = None
+
 init_start_menu()
 V = 5
 fps = 60
@@ -140,6 +156,8 @@ clock = pygame.time.Clock()
 bird = Bird(load_image('bird.png'), 3, 1, 253, 177)
 all_sprites.add(bird)
 bg = Background('bg.png')
+
+level = 0
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -149,6 +167,12 @@ while running:
                 play = True
             if levels_button.is_checked(*event.pos):
                 init_levels_menu()
+            if btn_left is not None and btn_left.is_checked(*event.pos):
+                leveldisplay.previous()
+                level = leveldisplay.get_level()
+            if btn_right is not None and btn_right.is_checked(*event.pos):
+                leveldisplay.next()
+                level = leveldisplay.get_level()
     bg.scrolling(V)
     bird.update()
     screen.blit(bg.image, (bg.x1, 0))
