@@ -81,6 +81,24 @@ class LevelDisplay(pygame.sprite.Sprite):
         return self.level + 1
 
 
+class RecordsDisplay(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        self.image = load_image('display.png')
+        self.rect = self.image.get_rect()
+        self.rect.x = 180
+        self.rect.y = 200
+
+    def draw(self):
+        font = pygame.font.Font('data/Flappy-Bird.ttf', 70)
+        text = font.render(f"best for level 1: {records[0]}", False, (255, 139, 85))
+        screen.blit(text, (200, 220))
+        text = font.render(f"best for level 2: {records[1]}", False, (255, 139, 85))
+        screen.blit(text, (200, 325))
+        text = font.render(f"best for level 3: {records[2]}", False, (255, 139, 85))
+        screen.blit(text, (200, 430))
+
+
 def load_image(name, colorkey=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
@@ -105,6 +123,7 @@ def init_start_menu():
     buttons.empty()
     widgets.empty()
     all_sprites.empty()
+    reset_variables()
 
     bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
     all_sprites.add(bird)
@@ -121,6 +140,7 @@ def init_levels_menu():
     global btn_left, btn_right, leveldisplay, exit_button
     buttons.empty()
     all_sprites.empty()
+    reset_variables()
     leveldisplay = LevelDisplay(
         (load_image('level_menu1.png'), load_image('level_menu2.png'), load_image('level_menu3.png')))
     widgets.add(leveldisplay)
@@ -133,6 +153,31 @@ def init_levels_menu():
     buttons.add(exit_button)
 
 
+def init_results():
+    global exit_button, recordsdisplay
+    buttons.empty()
+    widgets.empty()
+    all_sprites.empty()
+    reset_variables()
+    recordsdisplay = RecordsDisplay()
+    widgets.add(recordsdisplay)
+    exit_button = Button('btn_exit.png', (730, 205), 45, 45)
+    buttons.add(exit_button)
+
+
+def reset_variables():
+    global play_button, results_button, levels_button, btn_left, btn_right, exit_button, leveldisplay, recordsdisplay
+    play_button = None
+    results_button = None
+    levels_button = None
+    btn_left = None
+    btn_right = None
+    exit_button = None
+
+    leveldisplay = None
+    recordsdisplay = None
+
+
 pygame.init()
 pygame.display.set_caption('flappy bird')
 width, height = 960, 720
@@ -141,16 +186,8 @@ screen = pygame.display.set_mode(size)
 running = True
 all_sprites = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
-# создеём переменные, которые будут ссылаться на кнопки
-play_button = None
-results_button = None
-levels_button = None
-btn_left = None
-btn_right = None
-exit_button = None
-
 widgets = pygame.sprite.Group()
-leveldisplay = None
+reset_variables()
 
 init_start_menu()
 V = 5
@@ -159,12 +196,13 @@ clock = pygame.time.Clock()
 bg = Background('bg.png')
 
 level = 0
+records = tuple(i.strip() for i in open('data/records.txt').readlines())
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            if play_button.is_checked(*event.pos):
+            if play_button is not None and play_button.is_checked(*event.pos):
                 play = True
             if levels_button is not None and levels_button.is_checked(*event.pos):
                 init_levels_menu()
@@ -176,6 +214,8 @@ while running:
                 level = leveldisplay.get_level()
             if exit_button is not None and exit_button.is_checked(*event.pos):
                 init_start_menu()
+            if results_button is not None and results_button.is_checked(*event.pos):
+                init_results()
     bg.scrolling(V)
     bird.update()
     screen.blit(bg.image, (bg.x1, 0))
@@ -183,5 +223,7 @@ while running:
     all_sprites.draw(screen)
     widgets.draw(screen)
     buttons.draw(screen)
+    if recordsdisplay is not None:
+        recordsdisplay.draw()
     pygame.display.flip()
     clock.tick(fps)
