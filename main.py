@@ -1,18 +1,19 @@
 import pygame
 import os
 import sys
-from random import randrange
+from random import randrange, choice
 
 
 class Bird(pygame.sprite.Sprite):
     def __init__(self, sheet, columns, rows, x, y):
-        super().__init__(all_sprites)
+        super().__init__()
         self.frames = []
         self.cut_sheet(sheet, rows, columns, x, y)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
         self.to_start_pos()
         self.iteration = 0
+        self.mask = pygame.mask.from_surface(self.image)
 
     def cut_sheet(self, sheet, rows, columns, x, y):
         self.rect = pygame.Rect(0, 0, x, y)
@@ -33,6 +34,27 @@ class Bird(pygame.sprite.Sprite):
         self.rect.y = 200
 
 
+class Boost(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+        image = choice(('up.jpg', 'down.jpg'))
+        self.image = pygame.transform.scale(load_image(image, -1), (95, 50))
+        self.rect = self.image.get_rect()
+        self.rect.x = 810
+        self.rect.y = randrange(50, 600)
+        self.is_up = image == 'up.jpg'
+        self.mask = pygame.mask.from_surface(self.image)
+
+    def is_on_screen(self):
+        return -150 <= self.rect.x
+
+    def update(self):
+        if not self.is_on_screen():
+            boosts.remove(self)
+        else:
+            self.rect.x -= V
+
+
 class Pipe(pygame.sprite.Sprite):
     def __init__(self, height, is_down):
         super().__init__()
@@ -44,6 +66,7 @@ class Pipe(pygame.sprite.Sprite):
             self.rect.y = -self.rect.height + height
         else:
             self.rect.y = 632 - height
+        self.mask = pygame.mask.from_surface(self.image)
 
     def is_on_screen(self):
         return -150 <= self.rect.x
@@ -55,7 +78,7 @@ class Pipe(pygame.sprite.Sprite):
             self.rect.x -= V
 
     def is_behind_bird(self):
-        if self.rect.x < int(276 / 3)-70:
+        if self.rect.x < int(276 / 3) - 70:
             return True
         return False
 
@@ -87,11 +110,11 @@ class Background(pygame.sprite.Sprite):
 
 
 class LevelDisplay(pygame.sprite.Sprite):
-    def __init__(self, levels_images):
+    def __init__(self, levels_images, level):
         super().__init__()
         self.levels_image = levels_images
         self.k_levels = len(levels_images)
-        self.level = 0
+        self.level = level - 1
         self.update_image()
         self.rect = self.image.get_rect()
         self.rect.x = 180
@@ -166,11 +189,11 @@ def init_start_menu():
 
     buttons.empty()
     widgets.empty()
-    all_sprites.empty()
+    birds.empty()
     reset_variables()
 
-    bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
-    all_sprites.add(bird)
+    bird.to_start_pos()
+    birds.add(bird)
 
     play_button = Button('play_button.png', (350, 350), 231, 131)
     results_button = Button('results_button.png', (540, 550), 200, 100)
@@ -183,10 +206,11 @@ def init_start_menu():
 def init_levels_menu():
     global btn_left, btn_right, leveldisplay, exit_button
     buttons.empty()
-    all_sprites.empty()
+    birds.empty()
     reset_variables()
     leveldisplay = LevelDisplay(
-        (load_image('level_menu1.png', -1), load_image('level_menu2.png', -1), load_image('level_menu3.png', -1)))
+        (load_image('level_menu1.png', -1), load_image('level_menu2.png', -1), load_image('level_menu3.png', -1)),
+        level)
     widgets.add(leveldisplay)
     btn_left = Button('btn_left.png', (200, 320), 49, 88)
     btn_right = Button('btn_right.png', (710, 320), 49, 88)
@@ -201,7 +225,7 @@ def init_results():
     global exit_button, recordsdisplay
     buttons.empty()
     widgets.empty()
-    all_sprites.empty()
+    birds.empty()
     reset_variables()
     recordsdisplay = RecordsDisplay()
     widgets.add(recordsdisplay)
@@ -228,10 +252,10 @@ def start_game():
     reset_variables()
     buttons.empty()
     widgets.empty()
-    all_sprites.empty()
+    birds.empty()
     score = 0
     bird.to_start_pos()
-    all_sprites.add(bird)
+    birds.add(bird)
     g = 0.5  # ускорение свободного падения
     Uy = 0  # скорость по оси y
 
@@ -239,23 +263,32 @@ def start_game():
 def is_living():
     if not 0 <= bird.rect.y <= 561:
         return False
+    for i in obstacles:
+        if pygame.sprite.collide_mask(bird, i):
+            return False
     return True
 
 
 def add_pipes():
-    dist = 250
+    dist = 250 if level < 3 else 200
     h1 = randrange(50, 410)  # определяет высоту верхней трубы
     h2 = 652 - dist - h1
     obstacles.add(Pipe(h1, False))
     obstacles.add(Pipe(h2, True))
 
 
+def add_boost():
+    boosts.add(Boost())
+
+
 def end_game():
     global scoredisplay, exit_button, play_button
-    all_sprites.empty()
+    birds.empty()
     obstacles.empty()
+    boosts.empty()
     reset_variables()
     scoredisplay = ScoreDisplay()
+    update_score()
     exit_button = Button('btn_exit.png', (730, 205), 45, 45)
     play_button = Button('play_button.png', (350, 520), 231, 131)
     widgets.add(scoredisplay)
@@ -269,31 +302,46 @@ def draw_score():
     screen.blit(text, (450, 20))
 
 
+def update_score():
+    f = open('data/records.txt', 'w')
+    records[level - 1] = str(max(int(records[level - 1]), int(score)))
+    f.write('\n'.join(records))
+    f.close()
+
+
 pygame.init()
 pygame.display.set_caption('flappy bird')
 width, height = 960, 720
 size = width, height
 screen = pygame.display.set_mode(size)
 running = True
-all_sprites = pygame.sprite.Group()
+
+bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
+birds = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 widgets = pygame.sprite.Group()
 obstacles = pygame.sprite.Group()
-reset_variables()
+boosts = pygame.sprite.Group()
 
+reset_variables()
 init_start_menu()
+
 V = 5
 fps = 60
 play = False
+level = 1
 clock = pygame.time.Clock()
-bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
 bg = Background('bg.png')
+
 NEWPIPE = pygame.USEREVENT + 1
 pygame.time.set_timer(NEWPIPE, 1500)
 UPDATESCORE = pygame.USEREVENT + 2
 pygame.time.set_timer(UPDATESCORE, 500)
-level = 0
-records = tuple(i.strip() for i in open('data/records.txt').readlines())
+NEWBOOST = pygame.USEREVENT + 3
+pygame.time.set_timer(NEWBOOST, 5229)
+
+records = [i.strip() for i in open('data/records.txt').readlines()]
+
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -320,12 +368,15 @@ while running:
         if play:
             if event.type == NEWPIPE:
                 add_pipes()
+            if event.type == NEWBOOST and level > 1:
+                add_boost()
             if event.type == UPDATESCORE:
                 for i in obstacles:
                     score += 0.5 * int(i.is_behind_bird())
     screen.blit(bg.image, (bg.x1, 0))
     screen.blit(bg.image, (bg.x2, 0))
-    all_sprites.draw(screen)
+    birds.draw(screen)
+    boosts.draw(screen)
     obstacles.draw(screen)
     widgets.draw(screen)
     buttons.draw(screen)
@@ -336,6 +387,9 @@ while running:
     if play:
         Uy += g
         bird.rect.y += Uy
+        for i in boosts:
+            if pygame.sprite.collide_mask(bird, i):
+                bird.rect.y += 10 * (-1) ** int(i.is_up)
         if not is_living():
             play = False
             end_game()
@@ -343,6 +397,8 @@ while running:
     bg.scrolling(V)
     bird.update()
     for i in obstacles:
+        i.update()
+    for i in boosts:
         i.update()
     pygame.display.flip()
     clock.tick(fps)
