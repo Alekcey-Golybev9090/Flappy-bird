@@ -1,6 +1,7 @@
 import pygame
 import os
 import sys
+from random import randrange
 
 
 class Bird(pygame.sprite.Sprite):
@@ -35,14 +36,28 @@ class Bird(pygame.sprite.Sprite):
 class Pipe(pygame.sprite.Sprite):
     def __init__(self, height, is_down):
         super().__init__()
-        self.image = pygame.transform.scale(load_image('pipe.png', -1), (151, height))
+        self.image = load_image('pipe.png', (255, 255, 255))
         self.rect = self.image.get_rect()
-        self.rect.x = 960
-        if is_down:
+        self.rect.x = 810
+        if not is_down:
             self.image = pygame.transform.flip(self.image, False, True)
-            self.rect.y = 720 - height
+            self.rect.y = -self.rect.height + height
         else:
-            self.rect.y = 0
+            self.rect.y = 632 - height
+
+    def is_on_screen(self):
+        return -150 <= self.rect.x
+
+    def update(self):
+        if not self.is_on_screen():
+            obstacles.remove(self)
+        else:
+            self.rect.x -= V
+
+    def is_behind_bird(self):
+        if self.rect.x < int(276 / 3)-70:
+            return True
+        return False
 
 
 class Button(pygame.sprite.Sprite):
@@ -125,7 +140,7 @@ class ScoreDisplay(pygame.sprite.Sprite):
 
     def draw(self):
         font = pygame.font.Font('data/Flappy-Bird.ttf', 70)
-        text = font.render(f"SCORE: {score}", False, (255, 139, 85))
+        text = font.render(f"SCORE: {int(score)}", False, (255, 139, 85))
         screen.blit(text, (350, 300))
 
 
@@ -227,9 +242,18 @@ def is_living():
     return True
 
 
+def add_pipes():
+    dist = 250
+    h1 = randrange(50, 410)  # определяет высоту верхней трубы
+    h2 = 652 - dist - h1
+    obstacles.add(Pipe(h1, False))
+    obstacles.add(Pipe(h2, True))
+
+
 def end_game():
     global scoredisplay, exit_button, play_button
     all_sprites.empty()
+    obstacles.empty()
     reset_variables()
     scoredisplay = ScoreDisplay()
     exit_button = Button('btn_exit.png', (730, 205), 45, 45)
@@ -237,6 +261,12 @@ def end_game():
     widgets.add(scoredisplay)
     buttons.add(exit_button)
     buttons.add(play_button)
+
+
+def draw_score():
+    font = pygame.font.Font('data/Flappy-Bird.ttf', 70)
+    text = font.render(f"{int(score)}", False, (255, 255, 255))
+    screen.blit(text, (450, 20))
 
 
 pygame.init()
@@ -248,6 +278,7 @@ running = True
 all_sprites = pygame.sprite.Group()
 buttons = pygame.sprite.Group()
 widgets = pygame.sprite.Group()
+obstacles = pygame.sprite.Group()
 reset_variables()
 
 init_start_menu()
@@ -258,7 +289,9 @@ clock = pygame.time.Clock()
 bird = Bird(load_image('bird2.png'), 3, 1, int(276 / 3), 64)
 bg = Background('bg.png')
 NEWPIPE = pygame.USEREVENT + 1
-pygame.time.set_timer(NEWPIPE, 10)
+pygame.time.set_timer(NEWPIPE, 1500)
+UPDATESCORE = pygame.USEREVENT + 2
+pygame.time.set_timer(UPDATESCORE, 500)
 level = 0
 records = tuple(i.strip() for i in open('data/records.txt').readlines())
 while running:
@@ -284,24 +317,32 @@ while running:
                     init_results()
             else:
                 Uy = -10  # движение вверх
-        if play and event.type == NEWPIPE:
-            all_sprites.add(Pipe(300, True))
-    if play:
-        Uy += g
-        bird.rect.y += Uy
-        if not is_living():
-            play = False
-            end_game()
-    bg.scrolling(V)
-    bird.update()
+        if play:
+            if event.type == NEWPIPE:
+                add_pipes()
+            if event.type == UPDATESCORE:
+                for i in obstacles:
+                    score += 0.5 * int(i.is_behind_bird())
     screen.blit(bg.image, (bg.x1, 0))
     screen.blit(bg.image, (bg.x2, 0))
     all_sprites.draw(screen)
+    obstacles.draw(screen)
     widgets.draw(screen)
     buttons.draw(screen)
     if recordsdisplay is not None:
         recordsdisplay.draw()
     if scoredisplay is not None:
         scoredisplay.draw()
+    if play:
+        Uy += g
+        bird.rect.y += Uy
+        if not is_living():
+            play = False
+            end_game()
+        draw_score()
+    bg.scrolling(V)
+    bird.update()
+    for i in obstacles:
+        i.update()
     pygame.display.flip()
     clock.tick(fps)
